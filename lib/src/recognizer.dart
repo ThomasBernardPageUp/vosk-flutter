@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:ffi';
+import 'dart:ffi' if (dart.library.html) 'ffi_stub.dart';
 import 'dart:typed_data';
 
-import 'package:ffi/ffi.dart';
+import 'package:ffi/ffi.dart' if (dart.library.html) 'ffi_stub.dart';
 import 'package:flutter/services.dart';
 
 import '../vosk_flutter.dart';

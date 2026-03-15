@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) 'io_stub.dart';
 import 'dart:isolate';
 
 import 'package:archive/archive_io.dart';
@@ -135,8 +135,17 @@ class ModelLoader {
     return decompressionPath;
   }
 
-  static Future<String> _defaultDecompressionPath() async =>
-      path.join((await getApplicationDocumentsDirectory()).path, 'models');
+  static Future<String> _defaultDecompressionPath() async {
+    try {
+      return path.join(
+        (await getApplicationDocumentsDirectory()).path,
+        'models',
+      );
+    } catch (e) {
+      // Fallback for web or when path_provider fails
+      return 'models';
+    }
+  }
 }
 
 /// Description of a model.

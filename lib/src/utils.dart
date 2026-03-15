@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:ffi';
+import 'dart:ffi' if (dart.library.html) 'ffi_stub.dart';
 import 'dart:typed_data';
 
 /// FFI related string utils.

@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:ffi';
-import 'dart:io';
+import 'dart:ffi' if (dart.library.html) 'ffi_stub.dart';
+import 'dart:io' if (dart.library.html) 'io_stub.dart';
 
-import 'package:ffi/ffi.dart';
+import 'package:ffi/ffi.dart' if (dart.library.html) 'ffi_stub.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import '../vosk_flutter.dart';
 import 'generated_vosk_bindings.dart';
+import 'permission_service.dart'
+    if (dart.library.html) 'permission_service_stub.dart';
 import 'utils.dart';
 
 /// Provides access to the Vosk speech recognition API.
@@ -137,8 +138,7 @@ class VoskFlutterPlugin {
   ///
   /// This method may throw [MicrophoneAccessDeniedException].
   Future<SpeechService> initSpeechService(final Recognizer recognizer) async {
-    if (await Permission.microphone.status == PermissionStatus.denied &&
-        await Permission.microphone.request() == PermissionStatus.denied) {
+    if (!await PermissionService.requestMicrophonePermission()) {
       throw MicrophoneAccessDeniedException();
     }
 

@@ -1,4 +1,4 @@
-import 'dart:ffi';
+import 'dart:ffi' if (dart.library.html) 'ffi_stub.dart';
 
 import 'package:flutter/services.dart';
 import 'generated_vosk_bindings.dart';

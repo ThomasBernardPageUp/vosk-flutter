@@ -70,4 +70,4 @@ flutter:
         ffiPlugin: true
       web:
         pluginClass: VoskFlutterPlugin
-        fileName: lib/vosk_flutter_web.dart
+        fileName: lib/src/vosk_flutter_web.dart
