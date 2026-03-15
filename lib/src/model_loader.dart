@@ -1,13 +1,15 @@
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:io' if (dart.library.html) 'io_stub.dart';
-import 'dart:isolate';
+import 'stubs/io_stub.dart' if (dart.library.io) 'dart:io';
+import 'package:flutter/foundation.dart';
 
-import 'package:archive/archive_io.dart';
+import 'stubs/archive_stub.dart'
+    if (dart.library.io) 'package:archive/archive_io.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
+import 'stubs/path_provider_stub.dart'
+    if (dart.library.io) 'package:path_provider/path_provider.dart';
 
 /// A utility class for loading models from the assets or the internet.
 /// Models are loaded in separate isolates.
@@ -130,7 +132,10 @@ class ModelLoader {
     final archive = ZipDecoder().decodeBytes(bytes);
     final decompressionPath = modelStorage ?? await _defaultDecompressionPath();
 
-    await Isolate.run(() => extractArchiveToDisk(archive, decompressionPath));
+    await compute(
+      (_) => extractArchiveToDisk(archive, decompressionPath),
+      null,
+    );
 
     return decompressionPath;
   }

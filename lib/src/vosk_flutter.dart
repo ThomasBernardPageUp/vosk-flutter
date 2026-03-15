@@ -1,17 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:ffi' if (dart.library.html) 'ffi_stub.dart';
-import 'dart:io' if (dart.library.html) 'io_stub.dart';
 
-import 'package:ffi/ffi.dart' if (dart.library.html) 'ffi_stub.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../vosk_flutter.dart';
+import 'ffi_provider.dart';
 import 'generated_vosk_bindings.dart';
-import 'permission_service.dart'
-    if (dart.library.html) 'permission_service_stub.dart';
+import 'permission_service.dart';
+import 'stubs/io_stub.dart' if (dart.library.io) 'dart:io';
 import 'utils.dart';
 
 /// Provides access to the Vosk speech recognition API.

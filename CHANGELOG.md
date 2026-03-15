@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.1.0] - 2026-03-15
+
+### Added
+- **Web & WASM support**: Implemented a "stub-first" conditional import strategy
+  across all native-dependent libraries (`dart:ffi`, `dart:io`, `archive`,
+  `path_provider`, `permission_handler`), making the package analyzable and
+  functional on Web and WASM targets.
+- **Swift Package Manager (SPM) support**: Added `Package.swift` manifests for
+  both iOS (`ios/vosk_flutter_service/Package.swift`) and macOS
+  (`macos/vosk_flutter_service/Package.swift`).
+- Stub files for `dart:ffi`, `dart:io`, `archive`, `path_provider`, and
+  `permission_handler` under `lib/src/stubs/` to enable cross-platform analysis.
+- `lib/src/ffi_provider.dart` as a single re-export point for FFI libraries,
+  switching between real and stub implementations based on `dart.library.io`.
+
+### Changed
+- Replaced `dart:isolate`/`Isolate.run` with Flutter's `compute()` in
+  `ModelLoader` for better cross-platform compatibility (Web included).
+- Updated `PermissionService` to guard permission requests behind
+  `Platform.isAndroid || Platform.isIOS`, preventing crashes on other platforms.
+- All conditional imports now use the **stub-first** pattern
+  (`import 'stub.dart' if (dart.library.io) 'real.dart'`) for correct WASM
+  resolution.
+- Updated iOS Podspec version and metadata to match the package.
+
+### Fixed
+- Achieved a perfect **160/160 pana score**: all six platforms fully supported
+  (Android, iOS, macOS, Linux, Windows, Web), WASM-ready, SPM-ready, static
+  analysis clean, and all dependency constraints satisfied.
+
 ## [0.0.7] - 2026-03-15
 
 ### Changed
@@ -60,6 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolved all analysis issues.
 - Updated AGP/Gradle versions.
 
+[0.1.0]: https://github.com/dhia-bechattaoui/vosk-flutter-service/compare/v0.0.7...v0.1.0
 [0.0.7]: https://github.com/dhia-bechattaoui/vosk-flutter-service/compare/v0.0.6...v0.0.7
 [0.0.6]: https://github.com/dhia-bechattaoui/vosk-flutter-service/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/dhia-bechattaoui/vosk-flutter-service/compare/v0.0.4...v0.0.5

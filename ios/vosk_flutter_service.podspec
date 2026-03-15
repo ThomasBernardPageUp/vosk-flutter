@@ -5,14 +5,14 @@
 Pod::Spec.new do |s|
   s.name             = 'vosk_flutter_service'
 
-  s.version          = '0.0.6'
-  s.summary          = 'A new Flutter plugin project.'
+  s.version          = '0.0.7'
+  s.summary          = 'Flutter plugin for offline speech recognition using the Vosk speech recognition toolkit.'
   s.description      = <<-DESC
-A new Flutter plugin project.
+Flutter plugin for offline speech recognition using the Vosk speech recognition toolkit.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://www.bechattaoui.dev'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Alpha Cephei' => 'contact@alphacephei.com' }
+  s.author           = { 'Dhia Bechattaoui' => 'dhia@bechattaoui.dev' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/vosk_api.h'

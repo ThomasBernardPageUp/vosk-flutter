@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:ffi' if (dart.library.html) 'ffi_stub.dart';
+import 'ffi_provider.dart';
 import 'dart:typed_data';
 
 /// FFI related string utils.
@@ -44,12 +44,14 @@ extension FFICharPointerUtils on Pointer<Char> {
     }
 
     final codeUnits = cast<Uint8>();
-    return utf8.decode(codeUnits.asTypedList(_length(codeUnits)));
+    return utf8.decode(
+      (codeUnits.asTypedList(_length(codeUnits)) as List).cast<int>(),
+    );
   }
 
   static int _length(final Pointer<Uint8> codeUnits) {
     var length = 0;
-    while (codeUnits[length] != 0) {
+    while ((codeUnits[length] as dynamic) != 0) {
       length++;
     }
     return length;
