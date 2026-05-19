@@ -334,6 +334,7 @@ class SpeechService {
     private let resultHandler: VoskEventHandler
     private let partialHandler: VoskEventHandler
     private let errorHandler: VoskEventHandler
+    private var converter: AVAudioConverter?
 
     init(
         recognizer: OpaquePointer,
@@ -351,34 +352,54 @@ class SpeechService {
     }
 
     func start() throws {
-        let format = inputNode.outputFormat(forBus: bus)
+        let hardwareFormat = inputNode.outputFormat(forBus: bus)
+        guard let targetFormat = AVAudioFormat(
+            commonFormat: .pcmFormatInt16,
+            sampleRate: sampleRate,
+            channels: 1,
+            interleaved: true
+        ) else {
+            throw NSError(domain: "VoskFlutter", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "Failed to create target audio format"])
+        }
+        guard let audioConverter = AVAudioConverter(from: hardwareFormat, to: targetFormat) else {
+            throw NSError(domain: "VoskFlutter", code: 2,
+                          userInfo: [NSLocalizedDescriptionKey: "Failed to create audio converter"])
+        }
+        converter = audioConverter
 
-        inputNode.installTap(onBus: bus, bufferSize: 4096, format: format) { (buffer, time) in
-            if let channelData = buffer.int16ChannelData {
-                let dataLen = Int32(buffer.frameLength) * 2
-                let ptr = channelData[0].withMemoryRebound(to: CChar.self, capacity: Int(dataLen)) { $0 }
+        inputNode.installTap(onBus: bus, bufferSize: 4096, format: hardwareFormat) { [weak self] (buffer, time) in
+            guard let self = self, let converter = self.converter else { return }
 
-                if vosk_recognizer_accept_waveform(self.recognizer, ptr, dataLen) == 1 {
-                    if let res = vosk_recognizer_result(self.recognizer) {
-                        self.reportResult(String(cString: res))
-                    }
-                } else {
-                    if let res = vosk_recognizer_partial_result(self.recognizer) {
-                        self.reportPartial(String(cString: res))
-                    }
+            let ratio = self.sampleRate / hardwareFormat.sampleRate
+            let outputCapacity = AVAudioFrameCount(ceil(Double(buffer.frameLength) * ratio)) + 1
+            guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: outputCapacity) else { return }
+
+            var inputConsumed = false
+            var convError: NSError?
+            converter.convert(to: outputBuffer, error: &convError) { _, outStatus in
+                if inputConsumed {
+                    outStatus.pointee = .noDataNow
+                    return nil
                 }
-            } else if let floatChannelData = buffer.floatChannelData {
-                let dataLen = Int32(buffer.frameLength)
-                let ptr = floatChannelData[0]
+                inputConsumed = true
+                outStatus.pointee = .haveData
+                return buffer
+            }
 
-                if vosk_recognizer_accept_waveform_f(self.recognizer, ptr, dataLen) == 1 {
-                    if let res = vosk_recognizer_result(self.recognizer) {
-                        self.reportResult(String(cString: res))
-                    }
-                } else {
-                    if let res = vosk_recognizer_partial_result(self.recognizer) {
-                        self.reportPartial(String(cString: res))
-                    }
+            guard convError == nil, outputBuffer.frameLength > 0,
+                  let channelData = outputBuffer.int16ChannelData else { return }
+
+            let dataLen = Int32(outputBuffer.frameLength) * 2
+            let ptr = channelData[0].withMemoryRebound(to: CChar.self, capacity: Int(dataLen)) { $0 }
+
+            if vosk_recognizer_accept_waveform(self.recognizer, ptr, dataLen) == 1 {
+                if let res = vosk_recognizer_result(self.recognizer) {
+                    self.reportResult(String(cString: res))
+                }
+            } else {
+                if let res = vosk_recognizer_partial_result(self.recognizer) {
+                    self.reportPartial(String(cString: res))
                 }
             }
         }
