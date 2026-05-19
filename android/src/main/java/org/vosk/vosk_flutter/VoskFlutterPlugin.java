@@ -305,6 +305,7 @@ public class VoskFlutterPlugin implements FlutterPlugin, MethodCallHandler {
           if (speechService == null) {
             throw new SpeechServiceNotFound();
           }
+          speechService.stop();
           speechService.shutdown();
           speechService = null;
           result.success(null);

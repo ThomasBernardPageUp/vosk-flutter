@@ -5,12 +5,7 @@ import 'stubs/permission_handler_stub.dart'
 class PermissionService {
   static Future<bool> requestMicrophonePermission() async {
     if (Platform.isAndroid || Platform.isIOS) {
-      final status = await Permission.microphone.status;
-      if (status.isDenied) {
-        final result = await Permission.microphone.request();
-        return result.isGranted;
-      }
-      return status.isGranted;
+      return (await Permission.microphone.request()).isGranted;
     }
     return true;
   }
