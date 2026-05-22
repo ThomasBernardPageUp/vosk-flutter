@@ -1,15 +1,23 @@
 package org.vosk.vosk_flutter;
 
+import android.content.Context;
+import android.content.res.AssetManager;
 import androidx.annotation.NonNull;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import org.vosk.Model;
 import org.vosk.Recognizer;
 import org.vosk.android.SpeechService;
@@ -33,12 +41,14 @@ public class VoskFlutterPlugin implements FlutterPlugin, MethodCallHandler {
   private MethodChannel channel;
   private SpeechService speechService;
   private FlutterRecognitionListener recognitionListener;
+  private Context applicationContext;
 
   @Override
   public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
     channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "vosk_flutter");
     channel.setMethodCallHandler(this);
     recognitionListener = new FlutterRecognitionListener(flutterPluginBinding.getBinaryMessenger());
+    applicationContext = flutterPluginBinding.getApplicationContext();
   }
 
   @Override
@@ -312,6 +322,23 @@ public class VoskFlutterPlugin implements FlutterPlugin, MethodCallHandler {
         }
         break;
 
+        case "model.extractAsset": {
+          Map<String, Object> argsMap = castMethodCallArgs(call, argsMapClass);
+          String assetPath = getRequiredArgumentFromMap(argsMap, "assetPath", String.class);
+          String destDir = getRequiredArgumentFromMap(argsMap, "destDir", String.class);
+
+          AssetManager assetManager = applicationContext.getAssets();
+          new TaskRunner().executeAsync(
+            () -> {
+              extractZipAssetStreaming(assetManager, "flutter_assets/" + assetPath, destDir);
+              return null;
+            },
+            (ignored) -> result.success(null),
+            (exception) -> result.error("EXTRACTION_ERROR", exception.getMessage(), null)
+          );
+        }
+        break;
+
         default:
           result.notImplemented();
           break;
@@ -324,6 +351,29 @@ public class VoskFlutterPlugin implements FlutterPlugin, MethodCallHandler {
       result.error("NO_RECOGNIZER", "There is no recognizer with this id.", e);
     } catch (SpeechServiceNotFound e) {
       result.error("NO_SPEECH_SERVICE", "Speech service not created.", e);
+    }
+  }
+
+  private void extractZipAssetStreaming(AssetManager assetManager, String assetPath, String destDir) throws IOException {
+    try (InputStream is = assetManager.open(assetPath, AssetManager.ACCESS_STREAMING);
+         ZipInputStream zis = new ZipInputStream(new BufferedInputStream(is, 65536))) {
+      ZipEntry entry;
+      byte[] buffer = new byte[65536];
+      while ((entry = zis.getNextEntry()) != null) {
+        File destFile = new File(destDir, entry.getName());
+        if (entry.isDirectory()) {
+          destFile.mkdirs();
+        } else {
+          destFile.getParentFile().mkdirs();
+          try (FileOutputStream fos = new FileOutputStream(destFile)) {
+            int count;
+            while ((count = zis.read(buffer)) != -1) {
+              fos.write(buffer, 0, count);
+            }
+          }
+        }
+        zis.closeEntry();
+      }
     }
   }
 

@@ -11,6 +11,8 @@ import 'package:path/path.dart' as path;
 import 'stubs/path_provider_stub.dart'
     if (dart.library.io) 'package:path_provider/path_provider.dart';
 
+const _voskChannel = MethodChannel('vosk_flutter');
+
 /// A utility class for loading models from the assets or the internet.
 /// Models are loaded in separate isolates.
 class ModelLoader {
@@ -60,6 +62,39 @@ class ModelLoader {
     final decompressedModelRoot = path.join(decompressionPath, modelName);
     log(
       'Model loaded to $decompressedModelRoot in '
+      '${DateTime.now().difference(start).inMilliseconds}ms',
+      name: 'ModelLoader',
+    );
+
+    return decompressedModelRoot;
+  }
+
+  /// Load a model from the app assets using native streaming extraction.
+  ///
+  /// Unlike [loadFromAssets], this method does not use [rootBundle] and
+  /// therefore is not limited to assets smaller than 1 GB.
+  Future<String> loadFromAssetsStreaming(
+    final String asset, {
+    final bool forceReload = false,
+  }) async {
+    final modelName = path.basenameWithoutExtension(asset);
+    if (!forceReload && await isModelAlreadyLoaded(modelName)) {
+      final modelPathValue = await modelPath(modelName);
+      log('Model already loaded to $modelPathValue', name: 'ModelLoader');
+      return modelPathValue;
+    }
+
+    final destDir = modelStorage ?? await _defaultDecompressionPath();
+    final start = DateTime.now();
+
+    await _voskChannel.invokeMethod<void>('model.extractAsset', {
+      'assetPath': asset,
+      'destDir': destDir,
+    });
+
+    final decompressedModelRoot = path.join(destDir, modelName);
+    log(
+      'Model extracted to $decompressedModelRoot in '
       '${DateTime.now().difference(start).inMilliseconds}ms',
       name: 'ModelLoader',
     );
